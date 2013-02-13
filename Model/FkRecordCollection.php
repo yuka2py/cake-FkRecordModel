@@ -2,6 +2,7 @@
 /**
  * Supports Entitiy model on CakePHP.
  *
+ * @version       0.1.0
  * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
  * @package       FkRecordModel.Model
  * @license       GPLv3 License

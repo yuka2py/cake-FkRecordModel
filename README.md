@@ -31,7 +31,7 @@ class Post extends AppModel {
     // Definition
 }
 
-class Post extends AppRecord {
+class PostRecord extends AppRecord {
     function updateDateBy($format) {
         return date($format, strtotime($this->modified));
     }

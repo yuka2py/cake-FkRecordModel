@@ -16,7 +16,6 @@ Licensed under The GPLv3 License
 App::uses('FkRecordModel', 'FkRecordModel.Model');
 
 class AppModel extends FkRecordModel {
-
     // definition...
 }
 
@@ -35,7 +34,6 @@ class AppRecord extends FkRecord {
 App::uses('AppModel', 'Model');
 
 class Post extends AppModel {
-
     /**
      * Define verbose name. It is used in the label name, such as, for example.
      */
@@ -44,7 +42,14 @@ class Post extends AppModel {
         'description' => 'Description',
     );
 
-    // Other definition
+    var $hasMany = array(
+        'tags' => array(
+            'className' => 'PostTag',
+            'dependent' => true,
+        ),
+    );
+
+    // Other definition...
 }
 
 class PostRecord extends AppRecord {
@@ -75,6 +80,20 @@ class PostsController extends AppController {
         $this->set(compact('post'));
     }
 
+    function create() {
+        $post = $this->Post->build();
+        $this->set(compact('post'));
+
+        if ($this->request->is('post')) {
+            $post->setData($this->data);
+            if ($post->save()) {
+                // processing on success.
+            } else {
+                // processing on failed.
+            }
+        }
+    }
+
     function edit($id) {
         $post = $this->Post->findById($id);
         $this->set(compact('post'));
@@ -97,13 +116,22 @@ class PostsController extends AppController {
 
 
 ```php
-<?php foreach ($posts as $post): ?>
+<?php foreach ($posts as $post) : ?>
 
-    <h1><?php echo $post->title ?></h1>
-    <p><?php echo $post->description ?></p>
-    <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
+    <article id="post-<?php echo $post->getID() ?>">
+        <h1><?php echo $post->title ?></h1>
+        <p><?php echo $post->description ?></p>
+        <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
+<?php if (! $post->tags->isEmpty()) : ?>
+        <ul>
+<?php foreach ($post->tags) : ?>
+            <li><?php echo $post-tags ?></li>
+<?php endforeach; # $post->tags ?>
+        </ul>
+<?php endif; # !$post->tags->isEmpty() ?>
+    </article>
 
-<?php endforeach; ?>
+<?php endforeach; # $posts ?>
 ```
 
 
@@ -113,27 +141,25 @@ class PostsController extends AppController {
 #### /View/Posts/edit.ctp
 
 ```php
-<?php
-
-//Bind to FormHelper
-$post->bindFormHelper($this->Form);
-
-echo $post->Form->create('Post');
+<?php $post->bindFormHelper($this->Form) /* Bind to FormHelper */ ?>
+<?php echo $post->Form->create('Post') /* Start form */ ?>
 ?>
 <label>
-    <?php echo $post->getVerboseName('title') /* Print verbose name */ ?>: 
-    <?php echo $post->Form->text('decription') ?>
-    <?php echo $post->printError('title') /* print error message if has errored only */?>
+    <?php echo $post->getVerboseName('title') ?>: 
+    <?php echo $post->Form->text('title') ?>
+    <?php echo $post->getError('title') ?>
 </label>
 
 <label>
     <?php echo $post->getVerboseName('description') ?>: 
     <?php echo $post->Form->textarea('decription') ?>
-    <?php echo $post->printError('description') ?>
+    <?php echo $post->getError('description') ?>
 </label>
 
 <p>
     <?php echo $post->submit('Send') ?>
 </p>
+
+<?php echo $post->Form->end() ?>
 ```
 

@@ -10,72 +10,77 @@ Licensed under The GPLv3 License
 
 #### /Model/AppModel.php
 
-    App::uses('FkRecordModel', 'FkRecordModel.Model');
+```php
+App::uses('FkRecordModel', 'FkRecordModel.Model');
 
-    class AppModel extends FkRecordModel {
-        // Definition
-    }
+class AppModel extends FkRecordModel {
+    // Definition
+}
 
-    class AppRecord extends FkRecord {
-        // Definition
-    }
-
+class AppRecord extends FkRecord {
+    // Definition
+}
+```
 
 #### /Model/Post.php
 
-    App::uses('AppModel', 'Model');
+```php
+App::uses('AppModel', 'Model');
 
-    class Post extends AppModel {
-        // Definition
+class Post extends AppModel {
+    // Definition
+}
+
+class Post extends AppRecord {
+    function updateDateBy($format) {
+        return date($format, strtotime($this->modified));
     }
-
-    class Post extends AppRecord {
-        function updateDateBy($format) {
-            return date($format, strtotime($this->modified));
-        }
-    }
-
+}
+```
 
 #### /Cotroller/PostsController.php
 
-    class PostsController extends AppController {
+```php
+class PostsController extends AppController {
 
-        $uses = array('Post');
+    $uses = array('Post');
 
-        function index() {
-            $posts = $this->find('all');
-            $this->set(compact('posts'));
-        }
+    function index() {
+        $posts = $this->find('all');
+        $this->set(compact('posts'));
+    }
 
-        function show($id) {
-            $post = $this->Post->findById($id);
-            $this->set(compact('post'));
-        }
+    function show($id) {
+        $post = $this->Post->findById($id);
+        $this->set(compact('post'));
+    }
 
-        function edit($id) {
-            $post = $this->Post->findById($id);
-            $this->set(compact('post'));
+    function edit($id) {
+        $post = $this->Post->findById($id);
+        $this->set(compact('post'));
 
-            if ($this->request->is('put')) {
-                $post->setData($this->data);
-                if ($post->save()) {
-                    // processing on success.
-                } else {
-                    // processing on failed.
-                }
+        if ($this->request->is('put')) {
+            $post->setData($this->data);
+            if ($post->save()) {
+                // processing on success.
+            } else {
+                // processing on failed.
             }
         }
     }
-
+}
+```
 
 #### /View/Posts/index.ctp
 
-    <?php foreach ($posts as $post): ?>
 
-        <h1><?php echo $post->title ?></h1>
-        <p><?php echo $post->description ?></p>
-        <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
+```php
+<?php foreach ($posts as $post): ?>
 
-    <?php endforeach; ?>
+    <h1><?php echo $post->title ?></h1>
+    <p><?php echo $post->description ?></p>
+    <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
 
+<?php endforeach; ?>
+```
 

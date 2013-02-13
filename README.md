@@ -16,11 +16,20 @@ Licensed under The GPLv3 License
 App::uses('FkRecordModel', 'FkRecordModel.Model');
 
 class AppModel extends FkRecordModel {
-    // Definition
+
+    /**
+     * Define verbose name. It is used in the label name, such as, for example.
+     */
+    var $verboseName = array(
+        'title' => 'Title',
+        'description' => 'Description',
+    );
+
+    // other definition...
 }
 
 class AppRecord extends FkRecord {
-    // Definition
+    // definition...
 }
 
 ?>
@@ -94,5 +103,36 @@ class PostsController extends AppController {
     <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
 
 <?php endforeach; ?>
+```
+
+
+
+
+
+#### /View/Posts/edit.ctp
+
+```php
+<?php
+
+//Bind to FormHelper
+$post->bindFormHelper($this->Form);
+
+echo $post->Form->create('Post');
+?>
+<label>
+    <?php echo $post->getVerboseName('title') /* Print verbose name */ ?>: 
+    <?php echo $post->Form->text('decription') ?>
+    <?php echo $post->printError('title') /* print error message if has errored only */?>
+</label>
+
+<label>
+    <?php echo $post->getVerboseName('description') ?>: 
+    <?php echo $post->Form->textarea('decription') ?>
+    <?php echo $post->printError('description') ?>
+</label>
+
+<p>
+    <?php echo $post->submit('Send') ?>
+</p>
 ```
 

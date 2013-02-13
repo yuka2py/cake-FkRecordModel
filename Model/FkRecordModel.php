@@ -1,13 +1,16 @@
 <?php
-
+/**
+ * Supports Entitiy model on CakePHP.
+ *
+ * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
+ * @package       FkRecordModel.Model
+ * @license       GPLv3 License
+ */
 
 App::uses('Model', 'Model');
 App::uses('FkRecord', 'FkRecordModel.Model');
 App::uses('FkRecordCollection', 'FkRecordModel.Model');
 
-/**
- * 
- */
 class FkRecordModel extends Model
 {
 	protected $recordClassName;

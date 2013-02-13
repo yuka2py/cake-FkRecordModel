@@ -1,8 +1,12 @@
 <?php
-
 /**
- * 
+ * Supports Entitiy model on CakePHP.
+ *
+ * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
+ * @package       FkRecordModel.Model
+ * @license       GPLv3 License
  */
+
 class FkRecordCollection implements Iterator, Countable
 {
 	protected $_data;

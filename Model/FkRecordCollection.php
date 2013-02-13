@@ -76,10 +76,34 @@ class FkRecordCollection implements Iterator, Countable
 		return $list;
 	}
 
+	/**
+	 * Prepend data to the beginning of collection.
+	 * @param  FkRecord|array  $data
+	 * @return  void
+	 */
+	public function unshift($data) {
+		array_unshift($this->_data, $data);
+	}
 
+	/**
+	 * Shift a data off the beginning of collection.
+	 * @return  mixed
+	 */
+	public function shift() {
+		return array_shift($this->_data);
+	}
+
+	/**
+	 * Push data onto the end of collection.
+	 */
 	public function push($data) {
 		array_push($this->_data, $data);
 	}
+
+	/**
+	 * Pop the data off the end of collection.
+	 * @return  mixed
+	 */
 	public function pop() {
 		return array_pop($this->_data);
 	}

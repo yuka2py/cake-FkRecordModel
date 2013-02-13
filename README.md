@@ -17,15 +17,7 @@ App::uses('FkRecordModel', 'FkRecordModel.Model');
 
 class AppModel extends FkRecordModel {
 
-    /**
-     * Define verbose name. It is used in the label name, such as, for example.
-     */
-    var $verboseName = array(
-        'title' => 'Title',
-        'description' => 'Description',
-    );
-
-    // other definition...
+    // definition...
 }
 
 class AppRecord extends FkRecord {
@@ -43,7 +35,16 @@ class AppRecord extends FkRecord {
 App::uses('AppModel', 'Model');
 
 class Post extends AppModel {
-    // Definition
+
+    /**
+     * Define verbose name. It is used in the label name, such as, for example.
+     */
+    var $verboseName = array(
+        'title' => 'Title',
+        'description' => 'Description',
+    );
+
+    // Other definition
 }
 
 class PostRecord extends AppRecord {

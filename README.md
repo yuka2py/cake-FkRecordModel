@@ -11,6 +11,8 @@ Licensed under The GPLv3 License
 #### /Model/AppModel.php
 
 ```php
+<?php 
+
 App::uses('FkRecordModel', 'FkRecordModel.Model');
 
 class AppModel extends FkRecordModel {
@@ -20,11 +22,15 @@ class AppModel extends FkRecordModel {
 class AppRecord extends FkRecord {
     // Definition
 }
+
+?>
 ```
 
 #### /Model/Post.php
 
 ```php
+<?php
+
 App::uses('AppModel', 'Model');
 
 class Post extends AppModel {
@@ -36,17 +42,21 @@ class PostRecord extends AppRecord {
         return date($format, strtotime($this->modified));
     }
 }
+
+?>
 ```
 
 #### /Cotroller/PostsController.php
 
 ```php
+<?php
+
 class PostsController extends AppController {
 
     $uses = array('Post');
 
     function index() {
-        $posts = $this->find('all');
+        $posts = $this->Post->find('all');
         $this->set(compact('posts'));
     }
 
@@ -69,6 +79,8 @@ class PostsController extends AppController {
         }
     }
 }
+
+?>
 ```
 
 #### /View/Posts/index.ctp

@@ -176,12 +176,13 @@ class FkRecordCollection implements Iterator, Countable
 	}
 
 	public function __call($name, $arguments) {
-		if (preg_match('/^getBy(\w+)/', $name, $matches)) {
-			$name = Inflector::underscore($matches[1]);
+		if (preg_match('/^(getBy|selectBy)(\w+)/', $name, $matches)) {
+			$method = $matches[1];
+			$name = Inflector::underscore($matches[2]);
 			if ($this->_model->hasField($name)) {
 				$value = $arguments[0];
 				$callback = create_function('$record', sprintf('return \'%s\' === strval($record->%s);', $value, $name));
-				return $this->getBy($callback);
+				return $this->$method($callback);
 			}
 		}
 		throw new InternalErrorException('No such method: ' + $name);

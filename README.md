@@ -124,8 +124,8 @@ class PostsController extends AppController {
         <p>Updated at: <?php echo $post->updateDateBy('Y/m/s H:i') ?></p>
 <?php if (! $post->tags->isEmpty()) : ?>
         <ul>
-<?php foreach ($post->tags) : ?>
-            <li><?php echo $post-tags ?></li>
+<?php foreach ($post->tags as $tag) : /* loop for relations */ ?>
+            <li><?php echo $tag->name ?></li>
 <?php endforeach; # $post->tags ?>
         </ul>
 <?php endif; # !$post->tags->isEmpty() ?>

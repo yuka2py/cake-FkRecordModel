@@ -10,42 +10,44 @@
 
 class FkRecordCollection implements Iterator, Countable
 {
-	protected $_data;
+	protected $_records;
 	protected $_model;
 	protected $_bracket;
 
 	public function __construct(FkRecordModel $model, $data=array(), $bracket=false) {
-		$this->_data = empty($data) ? array() : $data;
+		$this->_records = empty($data) ? array() : $data;
 		$this->_model = $model;
 		$this->_bracket = $bracket;
 	}
+
 	public function isEmpty() {
 		return 0 === $this->count();
 	}
+
 	public function count() {
-		return count($this->_data);
+		return count($this->_records);
 	}
 	public function current() {
-		$index = key($this->_data);
-		$data = current($this->_data);
+		$index = key($this->_records);
+		$data = current($this->_records);
 		if ($data instanceof FkRecord) {
 			return $data;
 		} else {
-			return $this->_data[$index] 
+			return $this->_records[$index] 
 				= $this->_model->buildRecord($data, $this->_bracket);
 		}
 	}
 	public function key() {
-		return key($this->_data);
+		return key($this->_records);
 	}
 	public function next() {
-		next($this->_data);
+		next($this->_records);
 	}
 	public function rewind() {
-		reset($this->_data);
+		reset($this->_records);
 	}
 	public function valid() {
-		return key($this->_data) !== null;
+		return key($this->_records) !== null;
 	}
 
 
@@ -59,7 +61,7 @@ class FkRecordCollection implements Iterator, Countable
 		if (empty($comparator)) {
 			$comparator = create_function('$a, $b', 'return $a->getID() < $b->getID() ? -1 : 1;');
 		}
-		return usort($this->_data, $comparator);
+		return usort($this->_records, $comparator);
 	}
 
 
@@ -77,40 +79,58 @@ class FkRecordCollection implements Iterator, Countable
 	}
 
 	/**
-	 * Prepend data to the beginning of collection.
-	 * @param  FkRecord|array  $data
+	 * Prepend record to the beginning of collection.
+	 * @param  FkRecord|array  $record
 	 * @return  void
 	 */
-	public function unshift($data) {
-		array_unshift($this->_data, $data);
+	public function unshift($record) {
+		array_unshift($this->_records, $record);
 	}
 
 	/**
-	 * Shift a data off the beginning of collection.
+	 * Shift a record off the beginning of collection.
 	 * @return  mixed
 	 */
 	public function shift() {
-		return array_shift($this->_data);
+		return array_shift($this->_records);
 	}
 
 	/**
-	 * Push data onto the end of collection.
+	 * Push record onto the end of collection.
+	 * @param  FkRecord|array  $record
 	 */
-	public function push($data) {
-		array_push($this->_data, $data);
+	public function push($record) {
+		array_push($this->_records, $record);
 	}
 
 	/**
-	 * Pop the data off the end of collection.
+	 * Pop the record off the end of collection.
 	 * @return  mixed
 	 */
 	public function pop() {
-		return array_pop($this->_data);
+		return array_pop($this->_records);
 	}
 
+	/**
+	 * Remove the specified record from the collection.
+	 * @param  FkRecord  $target
+	 * @param  callable  $callback[optional]  Records that match this will be removed. Default expression is $a === $b.
+	 */
+	public function remove(FkRecord $target, $callback=null) {
+		$records = array();
+		if (empty($callback)) {
+			$callback = create_function('$a, $b', 'return $a === $b;');
+		}
+		foreach ($this as $record) {
+			if (! $callback($target, $record)) {
+				$records[] = $record;
+			}
+		}
+		$this->_records = $records;
+	}
 
 	public function getData() {
-		return $this->_data;
+		return $this->_records;
 	}
 	public function toArray($fields=array(), $onlyPrimaryData=true) {
 		$data = array();
@@ -126,4 +146,51 @@ class FkRecordCollection implements Iterator, Countable
 		}
 		return '[' . implode(',', $data) . ']';
 	}
+
+	/**
+	 * コレクションの中から callback が true となる最初の要素を返す。
+	 * 見つからない時は、null を返す。
+	 * @return  null|FkRecord
+	 */
+	public function getBy($callback) {
+		foreach ($this as $record) {
+			if (call_user_func($callback, $record)) {
+				return $record;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * コレクションの中から callback が true となる全ての要素を FkRecordCollection で返す。
+	 * @return  FkRecordCollection
+	 */
+	public function selectBy($callback) {
+		$records = new FkRecordCollection($this->_model, array(), $this->_bracket);
+		foreach ($this as $record) {
+			if (call_user_func($callback, $record)) {
+				$records.push($record);
+			}
+		}
+		return $records;
+	}
+
+	public function __call($name, $arguments) {
+		if (preg_match('/^getBy(\w+)/', $name, $matches)) {
+			$name = Inflector::underscore($matches[1]);
+			if ($this->_model->hasField($name)) {
+				$value = $arguments[0];
+				$callback = create_function('$record', sprintf('return \'%s\' === strval($record->%s);', $value, $name));
+				return $this->getBy($callback);
+			}
+		}
+		throw new InternalErrorException('No such method: ' + $name);
+	}
+
 }
+
+
+
+
+
+

@@ -52,20 +52,6 @@ class FkRecordCollection implements Iterator, Countable
 
 
 	/**
-	 * Sort collection with a an comparator.
-	 * @param  callable  comparator  Default comparator to sort by the primary key asc.
-	 * @return  boolean  On success, return true.
-	 */
-	public function sort($comparator=null) {
-		foreach ($this as $d) {} /* Notice: All data convert to FkRecord */
-		if (empty($comparator)) {
-			$comparator = create_function('$a, $b', 'return $a->getID() < $b->getID() ? -1 : 1;');
-		}
-		return usort($this->_records, $comparator);
-	}
-
-
-	/**
 	 * Get extracted data of collection.
 	 * @param  string  $field  field name
 	 * @return  array
@@ -148,24 +134,10 @@ class FkRecordCollection implements Iterator, Countable
 	}
 
 	/**
-	 * コレクションの中から callback が true となる最初の要素を返す。
-	 * 見つからない時は、null を返す。
-	 * @return  null|FkRecord
-	 */
-	public function getBy($callback) {
-		foreach ($this as $record) {
-			if (call_user_func($callback, $record)) {
-				return $record;
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * コレクションの中から callback が true となる全ての要素を FkRecordCollection で返す。
 	 * @return  FkRecordCollection
 	 */
-	public function selectBy($callback) {
+	public function select($callback) {
 		$records = new FkRecordCollection($this->_model, array(), $this->_bracket);
 		foreach ($this as $record) {
 			if (call_user_func($callback, $record)) {
@@ -175,8 +147,49 @@ class FkRecordCollection implements Iterator, Countable
 		return $records;
 	}
 
+	/**
+	 * コレクションの中から callback が true となる最初の要素を返す。
+	 * 見つからない時は、null を返す。
+	 * @param  $callback  
+	 * @return  null|FkRecord
+	 */
+	public function selectFirst($callback) {
+		foreach ($this as $record) {
+			if (call_user_func($callback, $record)) {
+				return $record;
+			}
+		}
+		return null;
+	}
+	/**
+	 * Sort collection with a an comparator.
+	 * @param  callable  comparator  Default comparator to sort by the primary key asc.
+	 * @return  boolean  On success, return true.
+	 */
+	public function sort($comparator=null) {
+		foreach ($this as $d) {} /* Notice: All data convert to FkRecord */
+		if (empty($comparator)) {
+			$comparator = create_function('$a, $b', 'return $a->getID() < $b->getID() ? -1 : 1;');
+		}
+		return usort($this->_records, $comparator);
+	}
+
+	/**
+	 * コレクションの全ての要素に $callback の処理を適用する。
+	 * @param  callable  $callback
+	 * @return  void
+	 */
+	public function each($callback) {
+		foreach ($this as $record) {
+			call_user_func($callback, $record);
+		}
+	}
+
+
+
+
 	public function __call($name, $arguments) {
-		if (preg_match('/^(getBy|selectBy)(\w+)/', $name, $matches)) {
+		if (preg_match('/^(select|selectFirst)By(\w+)/', $name, $matches)) {
 			$method = $matches[1];
 			$name = Inflector::underscore($matches[2]);
 			if ($this->_model->hasField($name)) {

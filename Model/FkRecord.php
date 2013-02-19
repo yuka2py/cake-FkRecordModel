@@ -304,17 +304,19 @@ class FkRecord extends ArrayObject
 			return $this->_cache[$name];
 		}
 
-		if (isset($this[$name])) {
-			$model = $this->_model->getAssociationModel($name);
-			if ($model) {
-				$type = $this->_model->getAssociationType($name);
-				switch ($type) {
-					case 'hasMany':
-					case 'hasAndBelongsToMany':
-						return $this->_cache[$name] 
-							= $model->buildRecordCollection($this[$name], true);
-					case 'hasOne':
-					case 'belongsTo':
+		//Association
+		$model = $this->_model->getAssociationModel($name);
+		if ($model) {
+			$type = $this->_model->getAssociationType($name);
+			switch ($type) {
+				case 'hasMany':
+				case 'hasAndBelongsToMany':
+					$records = isset($this[$name]) ? $this[$name] : array();
+					return $this->_cache[$name] 
+						= $model->buildRecordCollection($records, true);
+				case 'hasOne':
+				case 'belongsTo':
+					if (isset($this[$name])) {
 						$data = (array) $this[$name];
 						foreach ($data as $v) {
 							if ($v != null) {
@@ -322,8 +324,8 @@ class FkRecord extends ArrayObject
 									= $model->buildRecord($data, true);
 							}
 						}
-						return $this->_cache[$name] = null;
-				}
+					}
+					return $this->_cache[$name] = null;
 			}
 		} else if ($this->_model->hasField($name)) {
 			return $this->get($name);

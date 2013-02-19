@@ -8,7 +8,7 @@
  * @license       GPLv3 License
  */
 
-class FkRecordCollection implements Iterator, Countable
+class FkRecordCollection implements Iterator, Countable, ArrayAccess
 {
 	protected $_records;
 	protected $_model;
@@ -49,6 +49,20 @@ class FkRecordCollection implements Iterator, Countable
 	public function valid() {
 		return key($this->_records) !== null;
 	}
+	public function offsetExists($offset) {
+		return isset($this->_records[$offset]);
+	}
+	public function offsetGet($offset) {
+		return $this->_records[$offset];
+	}
+	public function offsetSet($offset, $value) {
+		$this->_records[$offset] = $value;
+	}
+	public function offsetUnset($offset) {
+		unset($this->_records[$offset]);
+	}
+
+
 
 
 	/**

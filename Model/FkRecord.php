@@ -19,7 +19,6 @@ class FkRecord extends ArrayObject
 	public $Form;
 
 
-
 	public function __construct(FkRecordModel $model, $rawdata) {
 		parent::__construct($rawdata);
 		$this->_model = $model;
@@ -281,10 +280,6 @@ class FkRecord extends ArrayObject
 
 
 
-
-
-
-
 	private static function _arrayGetByKeyRecursive($keys, $array, $default=null) {
 		$value = $array;
 		while ($key = array_shift($keys)) {
@@ -299,21 +294,22 @@ class FkRecord extends ArrayObject
 	}
 
 
+
 	public function __get($name) {
 		if (isset($this->_cache[$name])) {
 			return $this->_cache[$name];
 		}
 
 		//Association
-		$model = $this->_model->getAssociationModel($name);
-		if ($model) {
+		$AssocModel = $this->_model->getAssociationModel($name);
+		if ($AssocModel) {
 			$type = $this->_model->getAssociationType($name);
 			switch ($type) {
 				case 'hasMany':
 				case 'hasAndBelongsToMany':
 					$records = isset($this[$name]) ? $this[$name] : array();
 					return $this->_cache[$name] 
-						= $model->buildRecordCollection($records, true);
+						= $AssocModel->buildRecordCollection($records, true);
 				case 'hasOne':
 				case 'belongsTo':
 					if (isset($this[$name])) {
@@ -321,7 +317,7 @@ class FkRecord extends ArrayObject
 						foreach ($data as $v) {
 							if ($v != null) {
 								return $this->_cache[$name] 
-									= $model->buildRecord($data, true);
+									= $AssocModel->buildRecord($data, true);
 							}
 						}
 					}
@@ -339,10 +335,26 @@ class FkRecord extends ArrayObject
 	}
 
 	public function __isset($name) {
-		if ($this->_model->hasField($name)) {
-			return $this->offsetExists($name);
+		if ($this->_model->getAssociationType($name)) {
+			$assoc = $this->$name;
+			if ($assoc instanceof FkRecordCollection) {
+				return !$assoc->isEmpty();
+			} else {
+				return !empty($assoc);
+			}
 		}
+		else if (isset($this->_cache[$name])) {
+			return true;
+		}
+		else if ($this->_model->hasField($name)) {
+			$alias = $this->_model->alias;
+			return isset($this[$alias]) 
+				and isset($this[$alias][$name]);
+		}
+		return false;
 	}
+
+
 
 
 }

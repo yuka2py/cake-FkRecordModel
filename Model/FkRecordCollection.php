@@ -114,19 +114,22 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	/**
 	 * Remove the specified record from the collection.
 	 * @param  FkRecord  $target
-	 * @param  callable  $callback[optional]  Records that match this will be removed. Default expression is $a === $b.
+	 * @return  boolean  Removed records.
 	 */
-	public function remove(FkRecord $target, $callback=null) {
-		$records = array();
-		if (empty($callback)) {
-			$callback = create_function('$a, $b', 'return $a === $b;');
-		}
-		foreach ($this as $record) {
-			if (! $callback($target, $record)) {
-				$records[] = $record;
+	public function remove($target) {
+		$found = false;
+		foreach ($this as $index => $record) {
+			if ($target === $record) {
+				$found = true;
+				break;
 			}
 		}
-		$this->_records = $records;
+		if ($found) {
+			unset($this->_records[$index]);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public function getData() {
@@ -164,7 +167,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	/**
 	 * コレクションの中から callback が true となる最初の要素を返す。
 	 * 見つからない時は、null を返す。
-	 * @param  $callback  
+	 * @param  callable  $callback  
 	 * @return  null|FkRecord
 	 */
 	public function selectFirst($callback) {
@@ -208,7 +211,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 			$name = Inflector::underscore($matches[2]);
 			if ($this->_model->hasField($name)) {
 				$value = $arguments[0];
-				$callback = create_function('$record', sprintf('return \'%s\' === strval($record->%s);', $value, $name));
+				$callback = create_function('$r', sprintf('return \'%s\' === strval($r->%s);', $value, $name));
 				return $this->$method($callback);
 			}
 		}

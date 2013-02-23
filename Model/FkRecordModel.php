@@ -48,21 +48,21 @@ class FkRecordModel extends Model
 	}
 
 	public function getAssociationType($associationName) {
-		static $_map = array();
-		if (!array_key_exists($associationName, $_map)) {
+		static $_types = array();
+		if ( ! array_key_exists($associationName, $_types)) {
 			if (isset($this->hasMany[$associationName])) {
-				$_map[$associationName] = 'hasMany';
+				$_types[$associationName] = 'hasMany';
 			} else if (isset($this->hasOne[$associationName])) {
-				$_map[$associationName] = 'hasOne';
+				$_types[$associationName] = 'hasOne';
 			} else if (isset($this->belongsTo[$associationName])) {
-				$_map[$associationName] = 'belongsTo';
+				$_types[$associationName] = 'belongsTo';
 			} else if (isset($this->hasAndBelongsToMany[$associationName])) {
-				$_map[$associationName] = 'hasAndBelongsToMany';
+				$_types[$associationName] = 'hasAndBelongsToMany';
 			} else {
-				$_map[$associationName] = null;
+				$_types[$associationName] = null;
 			}
 		}
-		return $_map[$associationName];
+		return $_types[$associationName];
 	}
 
 	public function getAssociationClassName($associationName) {
@@ -77,15 +77,16 @@ class FkRecordModel extends Model
 
 	public function getAssociationModel($associationName) {
 		static $_models = array();
-		$className = $this->getAssociationClassName($associationName);
-		if ($className) {
-			$_models[$associationName] = new $className();
-		} else {
-			$_models[$associationName] = null;
+		if ( ! array_key_exists($associationName, $_models)) {
+			$className = $this->getAssociationClassName($associationName);
+			if ($className) {
+				$_models[$associationName] = new $className();
+			} else {
+				$_models[$associationName] = null;
+			}
 		}
 		return $_models[$associationName];
 	}
-
 
 	/**
 	 * Build new FkRecord object.

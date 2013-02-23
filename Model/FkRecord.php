@@ -92,17 +92,6 @@ class FkRecord extends ArrayObject
 	}
 
 
-	public function get($name, $default=null) {
-		$alias = $this->_model->alias;
-		if (isset($this[$alias]) and isset($this[$alias][$name])) {
-			return $this[$alias][$name];
-		} else {
-			return $default;
-		}
-	}
-
-
-
 
 	public function addError($fieldName, $message) {
 		$this->_errors[$fieldName][] = $message;
@@ -250,19 +239,6 @@ class FkRecord extends ArrayObject
 	}
 
 
-
-	public function set($name, $value=null) {
-		if (1 === func_num_args() and is_array($name)) {
-			$data = $name;
-			foreach ($data as $name => $value) {
-				$this->set($name, $value);
-			}
-		} else {
-			$this[$this->_model->alias][$name] = $value;
-		}
-	}
-
-
 	public function setData($data) {
 		$_ = $this->getData();
 		foreach ($data as $modelAlias => $entityData) {
@@ -294,64 +270,133 @@ class FkRecord extends ArrayObject
 	}
 
 
+	/**
+	 * $array の $key の値を ! empty で検査する。
+	 * @param  string  $key
+	 * @param  array  $array  
+	 * @return  boolean
+	 */
+	private function arrayValueNotEmpty($key, $array) {
+		return ! empty($array[$key]);
+	}
+	/**
+	 * $array の $key の値を array_key_exists で検査する。
+	 * @param  string  $key
+	 * @param  array  $array  
+	 * @return  boolean
+	 */
+	private function arrayKeyExists($key, $array) {
+		return array_key_exists($key, $array);
+	}
 
-	public function __get($name) {
-		if (isset($this->_cache[$name])) {
-			return $this->_cache[$name];
+	/**
+	 * フィールドの値を取得する。
+	 * 関連はオブジェクトに展開されます。
+	 * @param  mixed  $name  Field name or data array.
+	 * @param  mixed  $value[optional]  値が無いと判断された時に返す値。Default is null。
+	 * @param  string  $strict[optional]  値が無いと判断する基準。true はキーの有無で判定。false は empty で判定。Default is true。
+	 * @param  boolean  $throws[optional]  true を指定すると、自身のフィールド、またはアソシエーションの以外で、フィールドがみつからない時には例外をスローする。Default is false.
+	 */
+	public function get($name, $default=null, $strict=true, $throws=false) {
+		$notEmpty = $strict ? 'arrayKeyExists' : 'arrayValueNotEmpty';
+
+		//Own fields
+		$alias = $this->_model->alias;
+		if ($this->_model->hasField($name) and isset($this[$alias])) {
+			if ($this->$notEmpty($name, $this[$alias])) {
+				return $this[$alias][$name];
+			} else {
+				return $default;
+			}
+			
 		}
 
-		//Association
-		$AssocModel = $this->_model->getAssociationModel($name);
-		if ($AssocModel) {
-			$type = $this->_model->getAssociationType($name);
-			switch ($type) {
-				case 'hasMany':
-				case 'hasAndBelongsToMany':
-					$records = isset($this[$name]) ? $this[$name] : array();
-					return $this->_cache[$name] 
-						= $AssocModel->buildRecordCollection($records, true);
-				case 'hasOne':
-				case 'belongsTo':
-					if (isset($this[$name])) {
-						$data = (array) $this[$name];
-						foreach ($data as $v) {
-							if ($v != null) {
-								return $this->_cache[$name] 
-									= $AssocModel->buildRecord($data, true);
-							}
+		//Associations
+		if (array_key_exists($name, $this->_associationObjects)) {
+			return $this->_associationObjects[$name];
+		}
+		if ($AssocModel = $this->_model->getAssociationModel($name)) {
+			switch ($this->_model->getAssociationType($name)) {
+			case 'hasMany':
+			case 'hasAndBelongsToMany':
+				$records = isset($this[$name]) ? $this[$name] : array();
+				return $this->_associationObjects[$name] = $AssocModel->buildRecordCollection($records, true);
+			case 'hasOne':
+			case 'belongsTo':
+				if (isset($this[$name])) {
+					$data = (array) $this[$name];
+					foreach ($data as $v) {
+						if ($v != null) {
+							return $this->_associationObjects[$name] = $AssocModel->buildRecord($data, true);
 						}
 					}
-					return $this->_cache[$name] = null;
+				}
+				return $this->_associationObjects[$name] = null;
 			}
-		} else if ($this->_model->hasField($name)) {
-			return $this->get($name);
 		}
 
-		throw new ErrorException("\"$name\" property not found on " . get_class($this));
+		//Other fileds
+		if ($this->$notEmpty($name, $this)) {
+			return $this[$name];
+		}
+
+		if ($throws) {
+			ob_start();
+			debug($this->getData(), false);
+			$vardump = ob_get_contents();
+			ob_end_clean();
+			throw new InternalErrorException("\"$name\" field not found on " . get_class($this) . "\n" . $vardump);
+		}
+
+		return $default;
+	}
+
+	private $_associationObjects = array();
+
+	/**
+	 * フィールドに値をセットする。
+	 * @param  mixed  $name  Field name or data array.
+	 * @param  mixed  $value[optional]
+	 */
+	public function set($one, $value=null) {
+		if (is_array($one)) {
+			foreach ($one as $name => $value) {
+				$this->set($name, $value);
+			}
+		} else if ($this->_model->hasField($one)) {
+			$this[$this->_model->alias][$one] = $value;
+		} else {
+			$this[$one] = $value;
+		}
 	}
 
 	public function __set($name, $value) {
 		$this->set($name, $value);
 	}
 
+	public function __get($name) {
+		return $this->get($name, null, true);
+	}
+
 	public function __isset($name) {
+		//Own fields
+		if ($this->_model->hasField($name)) {
+			$alias = $this->_model->alias;
+			return isset($this[$alias]) and isset($this[$alias][$name]);
+		}
+
+		//Associations
 		if ($this->_model->getAssociationType($name)) {
-			$assoc = $this->$name;
+			$assoc = $this->get($name);
 			if ($assoc instanceof FkRecordCollection) {
-				return !$assoc->isEmpty();
+				return ! $assoc->isEmpty();
 			} else {
-				return !empty($assoc);
+				return ! empty($assoc);
 			}
 		}
-		else if (isset($this->_cache[$name])) {
-			return true;
-		}
-		else if ($this->_model->hasField($name)) {
-			$alias = $this->_model->alias;
-			return isset($this[$alias]) 
-				and isset($this[$alias][$name]);
-		}
-		return false;
+
+		//Others
+		return $this->offsetExists($name);
 	}
 
 

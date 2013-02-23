@@ -256,16 +256,13 @@ class FkRecord extends ArrayObject
 
 
 
-	private static function _arrayGetByKeyRecursive($keys, $array, $default=null) {
-		$value = $array;
-		while ($key = array_shift($keys)) {
-			if (is_array($value) and isset($value[$key])) {
-				$value = $value[$key];
-			} else {
-				$value = $default;
-				break;
-			}
-		}
+	/**
+	 * set でデータがセットされる前に、データを加工して返す。
+	 * @param  string  $name
+	 * @param  mixed  $value
+	 * @return  mixed  加工した値
+	 */
+	protected function beforeSet($name, $value) {
 		return $value;
 	}
 
@@ -364,9 +361,10 @@ class FkRecord extends ArrayObject
 				$this->set($name, $value);
 			}
 		} else if ($this->_model->hasField($one)) {
-			$this[$this->_model->alias][$one] = $value;
+			$this[$this->_model->alias][$one] = $this->beforeSet($one, $value);
 		} else {
-			$this[$one] = $value;
+			$value = 
+			$this[$one] = $this->beforeSet($one, $value);
 		}
 	}
 

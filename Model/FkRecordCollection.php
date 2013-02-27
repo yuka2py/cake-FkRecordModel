@@ -20,50 +20,16 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		$this->_bracket = $bracket;
 	}
 
+	private function _toRecord($record) {
+		if ($record instanceof FkRecord) {
+			return $record;
+		}
+		return $this->_model->buildRecord($data, $this->_bracket);
+	}
+
 	public function isEmpty() {
 		return 0 === $this->count();
 	}
-
-	public function count() {
-		return count($this->_records);
-	}
-	public function current() {
-		$index = key($this->_records);
-		$data = current($this->_records);
-		if ($data instanceof FkRecord) {
-			return $data;
-		} else {
-			return $this->_records[$index] 
-				= $this->_model->buildRecord($data, $this->_bracket);
-		}
-	}
-	public function key() {
-		return key($this->_records);
-	}
-	public function next() {
-		next($this->_records);
-	}
-	public function rewind() {
-		reset($this->_records);
-	}
-	public function valid() {
-		return key($this->_records) !== null;
-	}
-	public function offsetExists($offset) {
-		return isset($this->_records[$offset]);
-	}
-	public function offsetGet($offset) {
-		return $this->_records[$offset];
-	}
-	public function offsetSet($offset, $value) {
-		$this->_records[$offset] = $value;
-	}
-	public function offsetUnset($offset) {
-		unset($this->_records[$offset]);
-	}
-
-
-
 
 	/**
 	 * Get extracted data of collection.
@@ -81,10 +47,12 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	/**
 	 * Prepend record to the beginning of collection.
 	 * @param  FkRecord|array  $record
-	 * @return  void
+	 * @return  FkRecord
 	 */
 	public function unshift($record) {
+		$record = $this->_toRecord($record);
 		array_unshift($this->_records, $record);
+		return $record;
 	}
 
 	/**
@@ -92,15 +60,20 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	 * @return  mixed
 	 */
 	public function shift() {
-		return array_shift($this->_records);
+		$record = array_shift($this->_records);
+		$record = $this->_toRecord($record);
+		return $record;
 	}
 
 	/**
 	 * Push record onto the end of collection.
 	 * @param  FkRecord|array  $record
+	 * @return  FkRecord
 	 */
 	public function push($record) {
+		$record = $this->_toRecord($record);
 		array_push($this->_records, $record);
+		return $record;
 	}
 
 	/**
@@ -108,7 +81,9 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	 * @return  mixed
 	 */
 	public function pop() {
-		return array_pop($this->_records);
+		$record = array_pop($this->_records);
+		$record = $this->_toRecord($record);
+		return $record;
 	}
 
 	/**
@@ -130,6 +105,10 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		} else {
 			return false;
 		}
+	}
+
+	public function clear() {
+		$this->_records = array();
 	}
 
 	public function getData() {
@@ -178,6 +157,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		}
 		return null;
 	}
+
 	/**
 	 * Sort collection with a an comparator.
 	 * @param  callable  comparator  Default comparator to sort by the primary key asc.
@@ -203,8 +183,9 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	}
 
 
-
-
+	/**
+	 * 
+	 */
 	public function __call($name, $arguments) {
 		if (preg_match('/^(select|selectFirst)By(\w+)/', $name, $matches)) {
 			$method = $matches[1];
@@ -217,6 +198,54 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		}
 		throw new InternalErrorException('No such method: ' + $name);
 	}
+
+
+
+
+	public function count() {
+		return count($this->_records);
+	}
+	public function current() {
+		$index = key($this->_records);
+		$data = current($this->_records);
+		if ($data instanceof FkRecord) {
+			return $data;
+		} else {
+			return $this->_records[$index] = $this->_model->buildRecord($data, $this->_bracket);
+		}
+	}
+	public function key() {
+		return key($this->_records);
+	}
+	public function next() {
+		next($this->_records);
+	}
+	public function rewind() {
+		reset($this->_records);
+	}
+	public function valid() {
+		return key($this->_records) !== null;
+	}
+	public function offsetExists($offset) {
+		return isset($this->_records[$offset]);
+	}
+	public function offsetGet($offset) {
+		$this->_records[$offset] = $this->_toRecord($this->_records[$offset]);
+		return $this->_records[$offset];
+	}
+	public function offsetSet($offset, $value) {
+		$this->_records[$offset] = $value;
+	}
+	public function offsetUnset($offset) {
+		unset($this->_records[$offset]);
+	}
+
+
+
+
+
+
+
 
 }
 

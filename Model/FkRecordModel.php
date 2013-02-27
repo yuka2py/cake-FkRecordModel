@@ -38,6 +38,9 @@ class FkRecordModel extends Model
 		}
 	}
 
+	public function getRecordClassName() {
+		return $this->recordClassName;
+	}
 
 	public function getVerboseName($filedName) {
 		if (isset($this->verboseName[$filedName])) {
@@ -90,15 +93,17 @@ class FkRecordModel extends Model
 
 	/**
 	 * Build new FkRecord object.
-	 * @param  array  $rawdata  Array as a return of the Model::find('first', ...
+	 * @param  array  $data  Array as a return of the Model::find('first', ...
 	 * @return FkRecord
 	 */
-	public function buildRecord($rawdata=array(), $bracket=false) {
-		if ($bracket) {
-			$rawdata = array($this->name => $rawdata);
+	public function buildRecord($data=array(), $bracket=false) {
+		if (false === $data) {
+			return false;
 		}
-		return false === $rawdata 
-			? false : new $this->recordClassName($this, $rawdata);
+		if ($bracket) {
+			$data = array($this->name => $data);
+		}
+		return new $this->recordClassName($this, $data);
 	}
 
 	/**

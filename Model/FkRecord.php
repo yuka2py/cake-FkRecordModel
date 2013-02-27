@@ -242,8 +242,10 @@ class FkRecord extends ArrayObject
 	public function setData($data) {
 		$_ = $this->getData();
 		foreach ($data as $modelAlias => $entityData) {
-			foreach ($entityData as $field => $value) {
-				$_[$modelAlias][$field] = $value;
+			if (is_array($entityData)) {
+				foreach ($entityData as $field => $value) {
+					$_[$modelAlias][$field] = $value;
+				}
 			}
 		}
 		$this->exchangeArray($_);

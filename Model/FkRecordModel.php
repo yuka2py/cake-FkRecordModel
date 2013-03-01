@@ -15,6 +15,7 @@ App::uses('FkRecordCollection', 'FkRecordModel.Model');
 class FkRecordModel extends Model
 {
 	protected $recordClassName;
+	protected $recordCollectionClassName;
 
 	public $verboseName = array();
 	
@@ -33,6 +34,17 @@ class FkRecordModel extends Model
 					$this->recordClassName = 'AppRecord';
 				} else {
 					$this->recordClassName = 'FkRecord';
+				}
+			}
+		}
+		//Decide $recordCollectionClassName
+		if (empty($this->recordCollectionClassName)) {
+			$this->recordCollectionClassName = get_class($this) . 'RecordCollection';
+			if (!class_exists($this->recordCollectionClassName) and !App::uses($this->recordCollectionClassName, 'Model')) {
+				if (class_exists('AppRecordCollection') or App::uses('AppRecordCollection', 'Model')) {
+					$this->recordCollectionClassName = 'AppRecordCollection';
+				} else {
+					$this->recordCollectionClassName = 'FkRecordCollection';
 				}
 			}
 		}
@@ -112,7 +124,7 @@ class FkRecordModel extends Model
 	 * @return FkRecordCollection
 	 */
 	public function buildRecordCollection($rawdata=array(), $bracket=false) {
-		return new FkRecordCollection($this, $rawdata, $bracket);
+		return new $this->recordCollectionClassName($this, $rawdata, $bracket);
 	}
 
 

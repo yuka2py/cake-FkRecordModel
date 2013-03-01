@@ -129,15 +129,30 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		return '[' . implode(',', $data) . ']';
 	}
 
+	public function all($callback) {
+		foreach ($this as $record)
+			if ( ! call_user_func($callback, $record))
+				return false;
+		return true;
+	}
+	
+	public function any($callback) {
+		foreach ($this as $record)
+			if (call_user_func($callback, $record))
+				return true;
+		return false;
+	}
+
 	/**
 	 * コレクションの中から callback が true となる全ての要素を FkRecordCollection で返す。
+	 * @param  callable  callback
 	 * @return  FkRecordCollection
 	 */
 	public function select($callback) {
-		$records = new FkRecordCollection($this->_model, array(), $this->_bracket);
+		$records = $this->_model->buildRecordCollection(array(), $this->_bracket);
 		foreach ($this as $record) {
 			if (call_user_func($callback, $record)) {
-				$records.push($record);
+				$records->push($record);
 			}
 		}
 		return $records;

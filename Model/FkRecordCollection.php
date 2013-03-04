@@ -12,19 +12,19 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 {
 	protected $_records;
 	protected $_model;
-	protected $_bracket;
+	protected $_primary;
 
-	public function __construct(FkRecordModel $model, $data=array(), $bracket=false) {
+	public function __construct(FkRecordModel $model, $data=array(), $primary=false) {
 		$this->_records = empty($data) ? array() : $data;
 		$this->_model = $model;
-		$this->_bracket = $bracket;
+		$this->_primary = $primary;
 	}
 
 	private function _toRecord($record) {
 		if ($record instanceof FkRecord) {
 			return $record;
 		}
-		return $this->_model->buildRecord($data, $this->_bracket);
+		return $this->_model->buildRecord($data, $this->_primary);
 	}
 
 	public function isEmpty() {
@@ -149,7 +149,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	 * @return  FkRecordCollection
 	 */
 	public function select($callback) {
-		$records = $this->_model->buildRecordCollection(array(), $this->_bracket);
+		$records = $this->_model->buildRecordCollection(array(), $this->_primary);
 		foreach ($this as $record) {
 			if (call_user_func($callback, $record)) {
 				$records->push($record);
@@ -226,7 +226,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		if ($data instanceof FkRecord) {
 			return $data;
 		} else {
-			return $this->_records[$index] = $this->_model->buildRecord($data, $this->_bracket);
+			return $this->_records[$index] = $this->_model->buildRecord($data, $this->_primary);
 		}
 	}
 	public function key() {
@@ -254,12 +254,6 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	public function offsetUnset($offset) {
 		unset($this->_records[$offset]);
 	}
-
-
-
-
-
-
 
 
 }

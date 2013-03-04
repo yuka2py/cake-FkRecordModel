@@ -319,14 +319,14 @@ class FkRecord extends ArrayObject
 			case 'hasMany':
 			case 'hasAndBelongsToMany':
 				$records = isset($this[$name]) ? $this[$name] : array();
-				return $this->_associationObjects[$name] = $AssocModel->buildRecordCollection($records, true);
+				return $this->_associationObjects[$name] = $AssocModel->buildRecordCollection($records, false);
 			case 'hasOne':
 			case 'belongsTo':
 				if (isset($this[$name])) {
 					$data = (array) $this[$name];
 					foreach ($data as $v) {
 						if ($v != null) {
-							return $this->_associationObjects[$name] = $AssocModel->buildRecord($data, true);
+							return $this->_associationObjects[$name] = $AssocModel->buildRecord($data, false);
 						}
 					}
 				}

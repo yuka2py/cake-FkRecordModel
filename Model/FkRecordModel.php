@@ -50,9 +50,11 @@ class FkRecordModel extends Model
 		}
 	}
 
+
 	public function getRecordClassName() {
 		return $this->recordClassName;
 	}
+
 
 	public function getVerboseName($filedName) {
 		if (isset($this->verboseName[$filedName])) {
@@ -61,6 +63,7 @@ class FkRecordModel extends Model
 			return null;
 		}
 	}
+
 
 	public function getAssociationType($associationName) {
 		static $_types = array();
@@ -80,6 +83,7 @@ class FkRecordModel extends Model
 		return $_types[$associationName];
 	}
 
+
 	public function getAssociationClassName($associationName) {
 		$associationType = $this->getAssociationType($associationName);
 		if ($associationType) {
@@ -89,6 +93,7 @@ class FkRecordModel extends Model
 			return null;
 		}
 	}
+
 
 	public function getAssociationModel($associationName) {
 		static $_models = array();
@@ -103,28 +108,31 @@ class FkRecordModel extends Model
 		return $_models[$associationName];
 	}
 
+
 	/**
 	 * Build new FkRecord object.
 	 * @param  array  $data  Array as a return of the Model::find('first', ...
+	 * @param  boolean  $primary[optional]  Whether this model is being queried directly (vs. being queried as an association) default is false.
 	 * @return FkRecord
 	 */
-	public function buildRecord($data=array(), $bracket=false) {
+	public function buildRecord($data=array(), $primary=false) {
 		if (false === $data) {
 			return false;
 		}
-		if ($bracket) {
-			$data = array($this->name => $data);
+		if ( ! $primary) {
+			$data = array($this->alias => $data);
 		}
 		return new $this->recordClassName($this, $data);
 	}
+
 
 	/**
 	 * Build new FkRecordCollection 
 	 * @param  array $rawdata  Array as a return of the Model::find('all', ...
 	 * @return FkRecordCollection
 	 */
-	public function buildRecordCollection($rawdata=array(), $bracket=false) {
-		return new $this->recordCollectionClassName($this, $rawdata, $bracket);
+	public function buildRecordCollection($rawdata=array(), $primary=false) {
+		return new $this->recordCollectionClassName($this, $rawdata, $primary);
 	}
 
 
@@ -147,9 +155,9 @@ class FkRecordModel extends Model
 			case 'all':
 			case 'threaded':
 			case 'neighbors':
-				return $this->buildRecordCollection($rawdata);
+				return $this->buildRecordCollection($rawdata, true);
 			case 'first':
-				return $this->buildRecord($rawdata);
+				return $this->buildRecord($rawdata, true);
 			case 'count':
 			case 'list':
 			default:

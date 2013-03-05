@@ -12,18 +12,18 @@ class FkRecord extends ArrayObject
 {
 	const ALL_FILED = null;
 
-	protected $_model;
-	protected $_errors;
-	protected $_cache;
-
 	public $Form;
+
+	private $_model;
+	private $_errors;
+	private $_assocobjects = array();
 
 
 	public function __construct(FkRecordModel $model, $rawdata) {
 		parent::__construct($rawdata);
 		$this->_model = $model;
 		$this->_errors = array();
-		$this->_cache = array();
+		$this->_assocobjects = array();
 	}
 
 
@@ -41,7 +41,7 @@ class FkRecord extends ArrayObject
 	 * @return boolean  boolean True on success.
 	 */
 	public function delete($cascade=true) {
-		return $this->_model->delete($this->getID(), $cascade);
+		return $this->model()->delete($this->getID(), $cascade);
 	}
 
 
@@ -52,8 +52,8 @@ class FkRecord extends ArrayObject
 	 * @return integer
 	 */
 	public function getID($default=null) {
-		$alias = $this->_model->alias;
-		$key = $this->_model->primaryKey;
+		$alias = $this->model()->alias;
+		$key = $this->model()->primaryKey;
 		if (empty($this[$alias]) or empty($this[$alias][$key])) {
 			if (0 === func_num_args()) {
 				throw new ErrorException(sprintf('Record id is not set yet. %s[%s][%s]', 
@@ -65,6 +65,11 @@ class FkRecord extends ArrayObject
 		return $this[$alias][$key];
 	}
 
+	public function setID($val) {
+		$alias = $this->model()->alias;
+		$key = $this->model()->primaryKey;
+		$this[$alias][$key] = $val;
+	}
 
 	/**
 	 * Get data as array.
@@ -76,13 +81,13 @@ class FkRecord extends ArrayObject
 
 
 	public function getVerboseName($fieldName) {
-		return $this->_model->getVerboseName($fieldName);
+		return $this->model()->getVerboseName($fieldName);
 	}
 
 
 	public function hasID() {
-		$alias = $this->_model->alias;
-		$key = $this->_model->primaryKey;
+		$alias = $this->model()->alias;
+		$key = $this->model()->primaryKey;
 		return isset($this[$alias]) and isset($this[$alias][$key]) and !empty($this[$alias][$key]);
 	}
 
@@ -126,13 +131,13 @@ class FkRecord extends ArrayObject
 
 	public function getErrorMessage($fieldName=self::ALL_FILED, $messageWrapper=null, $fieldWrapper=null) {
 
-		is_null($messageWrapper) && $messageWrapper = $this->_model->errorMessageWrapper;
-		is_null($fieldWrapper) && $fieldWrapper = $this->_model->errorFieldWrapper;
+		is_null($messageWrapper) && $messageWrapper = $this->model()->errorMessageWrapper;
+		is_null($fieldWrapper) && $fieldWrapper = $this->model()->errorFieldWrapper;
 
 		if (self::ALL_FILED === $fieldName or is_array($fieldName)) {
 			$errors = $this->getError($fieldName);
 			foreach ($errors as $fieldName => &$error) {
-				$verboseName = $this->_model->getVerboseName($fieldName)
+				$verboseName = $this->model()->getVerboseName($fieldName)
 				or $verboseName = $fieldName;
 				$error = str_replace(':name', $verboseName, $fieldWrapper);
 				$error = str_replace(':message', $this->getErrorMessage($fieldName, $messageWrapper), $error);
@@ -151,9 +156,9 @@ class FkRecord extends ArrayObject
 
 
 	public function reload() {
-		$data = $this->_model->read(null, $this->getID());
+		$data = $this->model()->read(null, $this->getID());
 		$this->resetData($data);
-		$this->_cache = null;
+		$this->_assocobjects = array();
 	}
 
 
@@ -170,14 +175,17 @@ class FkRecord extends ArrayObject
 	 */
  	public function save($validate = true, $fieldList = array()) {
 		$this->_errors = array();
-		$result = $this->_model->save($this->getData(), $validate, $fieldList);
+		$data = $this->getData();
+		$this->model()->create();
+		$result = $this->model()->save($data, $validate, $fieldList);
 
 		if (false === $result) {
-			$this->_errors = $this->_model->validationErrors;
+			$this->_errors = $this->model()->validationErrors;
 		}
 		else if (true === $result) {
-			$id = $this->_model->getId();
-			$data = $this->_model->read(null, $id);
+			$id= $this->model()->getId();
+			// $this->setID($id);
+			$data = $this->model()->read(null, $id);
 			$this->resetData($data);
 		}
 		else if (is_array($result)) {
@@ -194,10 +202,10 @@ class FkRecord extends ArrayObject
 	 */
 	public function validates($options = array()) {
 		$this->_errors = array();
-		$this->_model->set($this->getData());
-		$result = $this->_model->validates($options);
+		$this->model()->set($this->getData());
+		$result = $this->model()->validates($options);
 		if (!$result) {
-			$this->_errors = $this->_model->validationErrors;
+			$this->_errors = $this->model()->validationErrors;
 		}
 		return $result;
 	}
@@ -212,7 +220,7 @@ class FkRecord extends ArrayObject
 	public function toArray($fields=array(), $onlyPrimaryData=true) {
 		$data = $this->getData();
 		if ($onlyPrimaryData) {
-			$data = isset($data[$this->_model->alias]) ? $data[$this->_model->alias] : array();
+			$data = isset($data[$this->model()->alias]) ? $data[$this->model()->alias] : array();
 		}
 		if ($fields) {
 			$extracted = array();
@@ -300,8 +308,8 @@ class FkRecord extends ArrayObject
 		$notEmpty = $strict ? 'arrayKeyExists' : 'arrayValueNotEmpty';
 
 		//Own fields
-		$alias = $this->_model->alias;
-		if ($this->_model->hasField($name) and isset($this[$alias])) {
+		$alias = $this->model()->alias;
+		if ($this->model()->hasField($name) and isset($this[$alias])) {
 			if ($this->$notEmpty($name, $this[$alias])) {
 				return $this[$alias][$name];
 			} else {
@@ -311,26 +319,32 @@ class FkRecord extends ArrayObject
 		}
 
 		//Associations
-		if (array_key_exists($name, $this->_associationObjects)) {
-			return $this->_associationObjects[$name];
+		if ($this->hasAssocObject($name)) {
+			return $this->getAssocObject($name);
 		}
-		if ($AssocModel = $this->_model->getAssociationModel($name)) {
-			switch ($this->_model->getAssociationType($name)) {
+		if ($AssocModel = $this->model()->getAssociationModel($name)) {
+			switch ($this->model()->getAssociationType($name)) {
 			case 'hasMany':
 			case 'hasAndBelongsToMany':
 				$records = isset($this[$name]) ? $this[$name] : array();
-				return $this->_associationObjects[$name] = $AssocModel->buildRecordCollection($records, false);
+				$records = $AssocModel->buildRecordCollection($records, false);
+				$records->setAssocObject($this->model()->alias, $this);
+				$this->setAssocObject($name, $records);
+				return $records;
 			case 'hasOne':
 			case 'belongsTo':
 				if (isset($this[$name])) {
-					$data = (array) $this[$name];
-					foreach ($data as $v) {
+					$record = (array) $this[$name];
+					foreach ($record as $v) { //？この処理の意味は？後日見直す。
 						if ($v != null) {
-							return $this->_associationObjects[$name] = $AssocModel->buildRecord($data, false);
+							$record = $AssocModel->buildRecord($record, false);
+							$record->setAssocObject($this->model()->alias, $this);
+							$this->setAssocObject($name, $record);
+							return $record;
 						}
 					}
 				}
-				return $this->_associationObjects[$name] = null;
+				return $this->setAssocObject($name, null);
 			}
 		}
 
@@ -350,23 +364,34 @@ class FkRecord extends ArrayObject
 		return $default;
 	}
 
-	private $_associationObjects = array();
+	public function setAssocObject($name, $assoc) {
+		$this->_assocobjects[$name] = $assoc;
+	}
+	public function hasAssocObject($name) {
+		return array_key_exists($name, $this->_assocobjects);
+	}
+	public function getAssocObject($name) {
+		return $this->_assocobjects[$name];
+	}
+
 
 	/**
 	 * フィールドに値をセットする。
-	 * @param  mixed  $name  Field name or data array.
-	 * @param  mixed  $value[optional]
+	 * @param  mixed  $one  Field name or data array.
+	 * @param  mixed  $two  Field value or pass field names.
 	 */
-	public function set($one, $value=null) {
+	public function set($one, $two=null) {
 		if (is_array($one)) {
+			$pass = (array) $two;
 			foreach ($one as $name => $value) {
-				$this->set($name, $value);
+				if (empty($pass) or in_array($name, $pass)) {
+					$this->set($name, $value);
+				}
 			}
-		} else if ($this->_model->hasField($one)) {
-			$this[$this->_model->alias][$one] = $this->beforeSet($one, $value);
+		} else if ($this->model()->hasField($one)) {
+			$this[$this->model()->alias][$one] = $this->beforeSet($one, $two);
 		} else {
-			$value = 
-			$this[$one] = $this->beforeSet($one, $value);
+			$this[$one] = $this->beforeSet($one, $two);
 		}
 	}
 
@@ -380,13 +405,13 @@ class FkRecord extends ArrayObject
 
 	public function __isset($name) {
 		//Own fields
-		if ($this->_model->hasField($name)) {
-			$alias = $this->_model->alias;
+		if ($this->model()->hasField($name)) {
+			$alias = $this->model()->alias;
 			return isset($this[$alias]) and isset($this[$alias][$name]);
 		}
 
 		//Associations
-		if ($this->_model->getAssociationType($name)) {
+		if ($this->hasAssocObject($name) or $this->model()->getAssociationType($name)) {
 			$assoc = $this->get($name);
 			if ($assoc instanceof FkRecordCollection) {
 				return ! $assoc->isEmpty();

@@ -10,21 +10,41 @@
 
 class FkRecordCollection implements Iterator, Countable, ArrayAccess
 {
-	protected $_records;
-	protected $_model;
-	protected $_primary;
+	private $_records;
+	private $_model;
+	private $_primary;
+	private $_assocobjects;
 
-	public function __construct(FkRecordModel $model, $data=array(), $primary=false) {
-		$this->_records = empty($data) ? array() : $data;
+	public function __construct(FkRecordModel $model, $records=array(), $primary=false) {
+		$this->_records = empty($records) ? array() : $records;
 		$this->_model = $model;
 		$this->_primary = $primary;
+		$this->_assocobjects = array();
 	}
 
 	private function _toRecord($record) {
-		if ($record instanceof FkRecord) {
-			return $record;
+		if ( ! $record instanceof FkRecord) {
+			$record = $this->model()->buildRecord($record, $this->_primary);
 		}
-		return $this->_model->buildRecord($data, $this->_primary);
+		foreach ($this->_assocobjects as $name => $assoc) {
+			$record->setAssocObject($name, $assoc);
+		}
+		return $record;
+	}
+
+	public function setAssocObject($name, $assoc) {
+		$this->_assocobjects[$name] = $assoc;
+	}
+	public function hasAssocObject($name) {
+		return array_key_exists($name, $this->_assocobjects);
+	}
+	public function getAssocObject($name) {
+		return $this->_assocobjects[$name];
+	}
+
+
+	public function model() {
+		return $this->_model;
 	}
 
 	public function isEmpty() {
@@ -149,7 +169,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	 * @return  FkRecordCollection
 	 */
 	public function select($callback) {
-		$records = $this->_model->buildRecordCollection(array(), $this->_primary);
+		$records = $this->model()->buildRecordCollection(array(), $this->_primary);
 		foreach ($this as $record) {
 			if (call_user_func($callback, $record)) {
 				$records->push($record);
@@ -176,14 +196,15 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	/**
 	 * Sort collection with a an comparator.
 	 * @param  callable  comparator  Default comparator to sort by the primary key asc.
-	 * @return  boolean  On success, return true.
+	 * @return  FkRecordCollection  Return self.
 	 */
 	public function sort($comparator=null) {
 		foreach ($this as $d) {} /* Notice: All data convert to FkRecord */
 		if (empty($comparator)) {
 			$comparator = create_function('$a, $b', 'return $a->getID() < $b->getID() ? -1 : 1;');
 		}
-		return usort($this->_records, $comparator);
+		usort($this->_records, $comparator);
+		return $this;
 	}
 
 	/**
@@ -197,7 +218,6 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		}
 	}
 
-
 	/**
 	 * 
 	 */
@@ -205,7 +225,7 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		if (preg_match('/^(select|selectFirst)By(\w+)/', $name, $matches)) {
 			$method = $matches[1];
 			$name = Inflector::underscore($matches[2]);
-			if ($this->_model->hasField($name)) {
+			if ($this->model()->hasField($name)) {
 				$value = $arguments[0];
 				$callback = create_function('$r', sprintf('return \'%s\' === strval($r->%s);', $value, $name));
 				return $this->$method($callback);
@@ -214,20 +234,21 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		throw new InternalErrorException('No such method: ' + $name);
 	}
 
-
-
+	public function __get($name) {
+		//Associations
+		if ($this->hasAssocObject($name)) {
+			return $this->getAssocObject($name);
+		}
+	}
 
 	public function count() {
 		return count($this->_records);
 	}
 	public function current() {
-		$index = key($this->_records);
-		$data = current($this->_records);
-		if ($data instanceof FkRecord) {
-			return $data;
-		} else {
-			return $this->_records[$index] = $this->_model->buildRecord($data, $this->_primary);
-		}
+		$record = current($this->_records);
+		$record = $this->_toRecord($record);
+		$this[$this->key()] = $record;
+		return $record;
 	}
 	public function key() {
 		return key($this->_records);
@@ -254,7 +275,6 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 	public function offsetUnset($offset) {
 		unset($this->_records[$offset]);
 	}
-
 
 }
 

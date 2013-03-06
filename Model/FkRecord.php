@@ -307,17 +307,6 @@ class FkRecord extends ArrayObject
 	public function get($name, $default=null, $strict=true, $throws=false) {
 		$notEmpty = $strict ? 'arrayKeyExists' : 'arrayValueNotEmpty';
 
-		//Own fields
-		$alias = $this->model()->alias;
-		if ($this->model()->hasField($name) and isset($this[$alias])) {
-			if ($this->$notEmpty($name, $this[$alias])) {
-				return $this[$alias][$name];
-			} else {
-				return $default;
-			}
-			
-		}
-
 		//Associations
 		if ($this->hasAssocObject($name)) {
 			return $this->getAssocObject($name);
@@ -348,9 +337,10 @@ class FkRecord extends ArrayObject
 			}
 		}
 
-		//Other fileds
-		if ($this->$notEmpty($name, $this)) {
-			return $this[$name];
+		//Own fields
+		$alias = $this->model()->alias;
+		if (isset($this[$alias]) and $this->$notEmpty($name, $this[$alias])) {
+			return $this[$alias][$name];
 		}
 
 		if ($throws) {
@@ -388,10 +378,8 @@ class FkRecord extends ArrayObject
 					$this->set($name, $value);
 				}
 			}
-		} else if ($this->model()->hasField($one)) {
-			$this[$this->model()->alias][$one] = $this->beforeSet($one, $two);
 		} else {
-			$this[$one] = $this->beforeSet($one, $two);
+			$this[$this->model()->alias][$one] = $this->beforeSet($one, $two);
 		}
 	}
 

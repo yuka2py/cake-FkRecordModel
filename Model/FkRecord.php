@@ -102,6 +102,10 @@ class FkRecord extends ArrayObject
 		$this->_errors[$fieldName][] = $message;
 	}
 
+	public function clearError() {
+		$this->_errors = array();
+	}
+
 	public function hasError($fieldName=self::ALL_FILED) {
 		if (self::ALL_FILED === $fieldName) {
 			return !empty($this->_errors);
@@ -174,13 +178,24 @@ class FkRecord extends ArrayObject
 	 * @return boolean Returns true on success.
 	 */
  	public function save($validate = true, $fieldList = array()) {
-		$this->_errors = array();
+ 		$this->model()->create();
+ 		if ($validate) {
+	 		$this->validates();
+ 		}
+ 		if ($this->hasError()) {
+ 			return false;
+ 		}
+
 		$data = $this->getData();
-		$this->model()->create();
-		$result = $this->model()->save($data, $validate, $fieldList);
+		$result = $this->model()->save($data, false, $fieldList);
 
 		if (false === $result) {
-			$this->_errors = $this->model()->validationErrors;
+			foreach ($this->model()->validationErrors as $name => $errors) {
+				foreach ($errors as $error) {
+					$this->addError($name, $error);
+				}
+			}
+			// $this->_errors = $this->model()->validationErrors;
 		}
 		else if (true === $result) {
 			$id= $this->model()->getId();
@@ -201,13 +216,17 @@ class FkRecord extends ArrayObject
 	 * @return  boolean  True  if there are no errors.
 	 */
 	public function validates($options = array()) {
-		$this->_errors = array();
+		$this->model()->create();
 		$this->model()->set($this->getData());
 		$result = $this->model()->validates($options);
-		if (!$result) {
-			$this->_errors = $this->model()->validationErrors;
+		if ( ! $result) {
+			foreach ($this->model()->validationErrors as $name => $errors) {
+				foreach ($errors as $error) {
+					$this->addError($name, $error);
+				}
+			}
 		}
-		return $result;
+		return ! $this->hasError();
 	}
 
 
@@ -392,12 +411,6 @@ class FkRecord extends ArrayObject
 	}
 
 	public function __isset($name) {
-		//Own fields
-		if ($this->model()->hasField($name)) {
-			$alias = $this->model()->alias;
-			return isset($this[$alias]) and isset($this[$alias][$name]);
-		}
-
 		//Associations
 		if ($this->hasAssocObject($name) or $this->model()->getAssociationType($name)) {
 			$assoc = $this->get($name);
@@ -406,6 +419,12 @@ class FkRecord extends ArrayObject
 			} else {
 				return ! empty($assoc);
 			}
+		}
+
+		//Own fields
+		$alias = $this->model()->alias;
+		if (isset($this[$alias]) and isset($this[$alias][$name])) {
+			return true;
 		}
 
 		//Others

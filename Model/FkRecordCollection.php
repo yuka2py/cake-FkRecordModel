@@ -22,15 +22,31 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 		$this->_assocobjects = array();
 	}
 
-	private function _toRecord($record) {
+	/*
+	 * TODO: 外部キーも設定できるようにする。
+	 */
+	private function _toRecord($record, $primary=null) {
 		if ( ! $record instanceof FkRecord) {
-			$record = $this->model()->buildRecord($record, $this->_primary);
+			$primary = is_null($primary) ? $this->_primary : $primary;
+			$record = $this->model()->buildRecord($record, $primary);
 		}
 		foreach ($this->_assocobjects as $name => $assoc) {
 			$record->setAssocObject($name, $assoc);
 		}
 		return $record;
 	}
+
+	/**
+	 * Build new FkRecord object.
+	 * TODO: 外部キーも設定できるようにする。
+	 * @param  array  $data  Array as a return of the Model::find('first', ...
+	 * @param  boolean  $primary[optional] default is false.
+	 * @return FkRecord
+	 */
+	public function buildRecord($data=array(), $primary=false) {
+		return $this->_toRecord($data, $primary);
+	}
+
 
 	public function setAssocObject($name, $assoc) {
 		$this->_assocobjects[$name] = $assoc;

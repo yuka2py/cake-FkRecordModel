@@ -2,7 +2,7 @@
 /**
  * Supports Entitiy model on CakePHP.
  *
- * @version       0.1.0
+ * @version       0.2.0
  * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
  * @package       FkRecordModel.Model
  * @license       GPLv3 License
@@ -226,7 +226,11 @@ class FkRecord extends ArrayObject
 				}
 			}
 		}
-		return ! $this->hasError();
+		$this->resetData($this->model()->data);
+		if ($this->model()->throwsValidationError and $this->hasError()) {
+			throw new FkRecordValidationError();
+		}
+		return $this->hasNotError();
 	}
 
 

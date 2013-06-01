@@ -2,7 +2,7 @@
 /**
  * Supports Entitiy model on CakePHP.
  *
- * @version       0.1.0
+ * @version       0.2.0
  * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
  * @package       FkRecordModel.Model
  * @license       GPLv3 License
@@ -243,7 +243,8 @@ class FkRecordCollection implements Iterator, Countable, ArrayAccess
 			$name = Inflector::underscore($matches[2]);
 			if ($this->model()->hasField($name)) {
 				$value = $arguments[0];
-				$callback = create_function('$r', sprintf('return \'%s\' === strval($r->%s);', $value, $name));
+				$callback = create_function('$r', sprintf('return %s === strval($r->%s);',
+					var_export(strval($value), 1), $name));
 				return $this->$method($callback);
 			}
 		}

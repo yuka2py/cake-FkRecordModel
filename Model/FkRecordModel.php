@@ -2,7 +2,7 @@
 /**
  * Supports Entitiy model on CakePHP.
  *
- * @version       0.1.0
+ * @version       0.2.0
  * @copyright     Copyright 2012-2013, Foreignkey, Inc. (http://foreignkey.jp)
  * @package       FkRecordModel.Model
  * @license       GPLv3 License
@@ -11,6 +11,7 @@
 App::uses('Model', 'Model');
 App::uses('FkRecord', 'FkRecordModel.Model');
 App::uses('FkRecordCollection', 'FkRecordModel.Model');
+require_once 'FkRecordExceptions.php';
 
 class FkRecordModel extends Model
 {
@@ -21,6 +22,13 @@ class FkRecordModel extends Model
 	
 	public $errorMessageWrapper = ":message";
 	public $errorFieldWrapper = "[:name] :message\n";
+
+	/**
+	 * Throws exceptions on validation error, If set True.
+	 * Default is False, means the result as boolean on the validation.
+	 * @var boolean
+	 */
+	public $throwsValidationError = false;
 
 
 	public function __construct($id=false, $table=null, $ds=null) {

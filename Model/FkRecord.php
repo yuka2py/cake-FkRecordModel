@@ -345,9 +345,9 @@ class FkRecord extends ArrayObject
 				return $records;
 			case 'hasOne':
 			case 'belongsTo':
-				if (isset($this[$name])) {
+				if ( ! empty($this[$name])) {
 					$record = (array) $this[$name];
-					foreach ($record as $v) { //？この処理の意味は？後日見直す。
+					foreach ($record as $v) { //TODO:？この処理の意味は？後日確認する。
 						if ($v != null) {
 							$record = $AssocModel->buildRecord($record, false);
 							$record->setAssocObject($this->model()->alias, $this);
@@ -356,7 +356,8 @@ class FkRecord extends ArrayObject
 						}
 					}
 				}
-				return $this->setAssocObject($name, null);
+				$this->setAssocObject($name, null);
+				return null;
 			}
 		}
 

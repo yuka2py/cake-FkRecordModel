@@ -121,7 +121,7 @@ class FkRecordModel extends Model
 	 * Build new FkRecord object.
 	 * @param  array  $data  Array as a return of the Model::find('first', ...
 	 * @param  boolean  $primary[optional]  Whether this model is being queried directly (vs. being queried as an association) default is false.
-	 * @return FkRecord
+	 * @return FkRecord|null
 	 */
 	public function buildRecord($data=array(), $primary=false) {
 		if (false === $data) {
@@ -165,7 +165,11 @@ class FkRecordModel extends Model
 			case 'neighbors':
 				return $this->buildRecordCollection($rawdata, true);
 			case 'first':
-				return $this->buildRecord($rawdata, true);
+				if ($rawdata) {
+					return $this->buildRecord($rawdata, true);
+				} else {
+					return null;
+				}
 			case 'count':
 			case 'list':
 			default:
